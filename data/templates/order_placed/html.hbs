@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Confirmation</title>
+    <style>
+        body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #333; line-height: 1.6; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { border-bottom: 1px solid #eee; padding-bottom: 20px; margin-bottom: 20px; }
+        .header h1 { margin: 0; color: #000; }
+        .details { background: #f9f9f9; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
+        .details p { margin: 5px 0; }
+        .footer { font-size: 12px; color: #999; text-align: center; margin-top: 30px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Thank you for your order!</h1>
+        </div>
+        <p>Hi there,</p>
+        <p>We have received your order and are getting it ready for you.</p>
+        
+        <div class="details">
+            <p><strong>Order ID:</strong> {{id}}</p>
+            <p><strong>Total Amount:</strong> {{total}}</p>
+        </div>
+
+        <p>We appreciate your business and hope you enjoy your purchase.</p>
+
+        <div class="footer">
+            <p>&copy; LUMIERA. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

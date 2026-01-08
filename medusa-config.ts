@@ -13,6 +13,24 @@ module.exports = defineConfig({
       cookieSecret: process.env.COOKIE_SECRET || "supersecret",
     }
   },
+  modules: [
+    {
+      resolve: "@medusajs/medusa/notification",
+      options: {
+        providers: [
+          {
+            resolve: "./src/modules/resend",
+            id: "resend",
+            options: {
+              channels: ["email"],
+              apiKey: process.env.RESEND_API_KEY,
+              from: process.env.RESEND_FROM_EMAIL,
+            },
+          },
+        ],
+      },
+    },
+  ],
   admin: {
     // 启用中文语言支持
     backendUrl: process.env.MEDUSA_BACKEND_URL || "http://localhost:9000",
