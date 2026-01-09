@@ -27,6 +27,8 @@
     "@medusajs/framework": "2.12.4",
     "@medusajs/medusa": "2.12.4",
     "@medusajs/utils": "^2.12.4",
+    "@react-email/components": "^1.0.4",
+    "@react-email/render": "^2.0.2",
     "handlebars": "^4.7.8",
     "resend": "^6.7.0"
   },
