@@ -25,6 +25,7 @@ export async function GET(
                 "status",
                 "images.*",
                 "variants.*",
+                "variants.thumbnail",
                 "variants.images.*",
                 "variants.prices.*",
                 "variants.options.*",
