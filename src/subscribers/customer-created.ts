@@ -51,17 +51,22 @@ export default async function customerCreatedHandler({
 
         logger.info(`[CustomerCreatedSubscriber] Creating promotion with code: ${code}`)
 
-        // 创建促销活动
-        const promotion = await promotionModuleService.createPromotions({
+        // 创建促销活动 - createPromotions 返回数组
+        const promotions = await promotionModuleService.createPromotions({
             code: code,
             type: "standard",
+            status: "active", // 启用状态（非草稿）
+            is_automatic: true, // 自动应用方式
             application_method: {
-                type: "percentage",
-                value: 15,
+                type: "percentage", // 百分比类型
+                value: 15, // 15%
                 target_type: "order",
+                allocation: "across", // 跨商品分配
             },
         })
 
+        // createPromotions 返回数组，取第一个元素
+        const promotion = Array.isArray(promotions) ? promotions[0] : promotions
         logger.info(`[CustomerCreatedSubscriber] Promotion created with ID: ${promotion?.id}`)
 
         discountCode = code

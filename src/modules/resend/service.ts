@@ -23,7 +23,7 @@ class ResendNotificationProviderService extends AbstractNotificationProviderServ
         this.options = options
     }
 
-    async send(notification: any): Promise<void> {
+    async send(notification: any): Promise<{ id: string; to: string; status: string; data: Record<string, unknown> }> {
         const from = this.options.from || "onboarding@resend.dev"
         const { to, template, data } = notification
 
@@ -220,6 +220,16 @@ class ResendNotificationProviderService extends AbstractNotificationProviderServ
 
             console.log(`[Resend] ✅ Email sent to ${to} [ID: ${result?.id}] [Template: ${template}]`)
 
+            // Medusa v2 要求返回包含 id, to, status, data 的对象
+            return {
+                id: result?.id || `email-${Date.now()}`,
+                to,
+                status: "sent",
+                data: {
+                    resend_id: result?.id,
+                    template,
+                }
+            }
         } catch (error) {
             console.error("Resend send failed:", error)
             throw error
