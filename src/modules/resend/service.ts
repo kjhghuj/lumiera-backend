@@ -9,6 +9,9 @@ type ResendOptions = {
     from: string
 }
 
+// Email validation regex
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 class ResendNotificationProviderService extends AbstractNotificationProviderService {
     static identifier = "resend-notification"
     protected resend: Resend
@@ -26,9 +29,15 @@ class ResendNotificationProviderService extends AbstractNotificationProviderServ
     async send(notification: any): Promise<{ id: string; to: string; status: string; data: Record<string, unknown> }> {
         const from = this.options.from || "onboarding@resend.dev"
         const { to, template, data } = notification
+        const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000"
 
         if (!to) {
             throw new Error("No 'to' address provided for notification")
+        }
+
+        // Validate email format
+        if (!EMAIL_REGEX.test(to)) {
+            throw new Error("Invalid email address format")
         }
 
         let htmlContent = ""
@@ -104,7 +113,7 @@ class ResendNotificationProviderService extends AbstractNotificationProviderServ
                             <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
                                 <tr>
                                     <td align="center" style="padding: 16px 0 32px;">
-                                        <a href="http://localhost:3000/shop" style="display: inline-block; background-color: #1a1a1a; color: #ffffff; text-decoration: none; padding: 16px 40px; border-radius: 6px; font-size: 14px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; transition: background-color 0.3s;">
+                                        <a href="${frontendUrl}/shop" style="display: inline-block; background-color: #1a1a1a; color: #ffffff; text-decoration: none; padding: 16px 40px; border-radius: 6px; font-size: 14px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; transition: background-color 0.3s;">
                                             Explore Our Collection
                                         </a>
                                     </td>
@@ -131,7 +140,7 @@ class ResendNotificationProviderService extends AbstractNotificationProviderServ
                                             London, United Kingdom
                                         </p>
                                         <p style="margin: 0; font-size: 12px;">
-                                            <a href="http://localhost:3000" style="color: #888; text-decoration: none; margin: 0 8px;">Website</a>
+                                            <a href="${frontendUrl}" style="color: #888; text-decoration: none; margin: 0 8px;">Website</a>
                                             <span style="color: #ddd;">•</span>
                                             <a href="https://instagram.com/lumiera" style="color: #888; text-decoration: none; margin: 0 8px;">Instagram</a>
                                             <span style="color: #ddd;">•</span>
@@ -214,8 +223,8 @@ class ResendNotificationProviderService extends AbstractNotificationProviderServ
             const { data: result, error } = await this.resend.emails.send(emailOptions)
 
             if (error) {
-                console.error("Resend API Error:", error)
-                throw new Error(`Resend Error: ${error.message}`)
+                console.error("[Resend] Email send failed:", error.message || "Unknown error")
+                throw new Error("Failed to send email notification")
             }
 
             console.log(`[Resend] ✅ Email sent to ${to} [ID: ${result?.id}] [Template: ${template}]`)
@@ -231,8 +240,8 @@ class ResendNotificationProviderService extends AbstractNotificationProviderServ
                 }
             }
         } catch (error) {
-            console.error("Resend send failed:", error)
-            throw error
+            console.error("[Resend] Send operation failed:", error instanceof Error ? error.message : "Unknown error")
+            throw new Error("Email notification failed")
         }
     }
 }

@@ -7,9 +7,21 @@ export default async function createAdminUser({ container }: ExecArgs) {
     const authModule = container.resolve(Modules.AUTH);
     const logger = container.resolve("logger");
 
-    const email = "admin@lumiera.com";
-    const password = "password123";
+    const email = process.env.ADMIN_EMAIL || "admin@lumiera.com";
+    const password = process.env.ADMIN_PASSWORD;
     const actorType = "user"; // Important for v2
+
+    // Security: Require password to be set via environment variable
+    if (!password) {
+        logger.error("❌ ADMIN_PASSWORD environment variable is required");
+        logger.info("Usage: ADMIN_EMAIL=admin@example.com ADMIN_PASSWORD=yourSecurePassword npm run medusa exec ./src/scripts/create-admin-user.ts");
+        throw new Error("ADMIN_PASSWORD environment variable must be set");
+    }
+
+    if (password.length < 8) {
+        logger.error("❌ Password must be at least 8 characters long");
+        throw new Error("Password too short");
+    }
 
     logger.info(`Starting creation of admin user: ${email}`);
 
@@ -45,7 +57,7 @@ export default async function createAdminUser({ container }: ExecArgs) {
         });
 
         if (existingIdentities.length > 0) {
-            logger.info(`Auth identity for ${email} already exists. Deleting to reset password...`);
+            logger.info(`Auth identity for ${email} already exists. Deleting to reset...`);
             await authModule.deleteAuthIdentities([existingIdentities[0].id]);
         }
 
@@ -58,32 +70,23 @@ export default async function createAdminUser({ container }: ExecArgs) {
             },
             user_metadata: {},
             provider_metadata: {
-                password: password // The emailpass provider expects this in provider_metadata usually? 
-                // OR it might be in a specific format.
+                password: password // The emailpass provider expects this in provider_metadata
             }
         });
 
-        // Wait, the `emailpass` provider implementation details allow passing the password in the body or metadata.
-        // For `createAuthIdentities` on the generic service, it takes `AuthIdentityCreateDTO`.
-        // It doesn't straightforwardly look like it takes a raw password to hash unless the provider logic is triggered.
-        // The standard way to create an admin with password in v2 is often via the CLI or a specific workflow.
-        // Since the CLI failed, we might have a config issue or a bug.
-
-        // Let's try to do what the seeding usually does or what `medusa-auth-emailpass` expects.
-        // Actually, usually we set the password separately or use a registration flow.
-
-        // However, if we look at how the `user` command is implemented, it calls `authModuleService.createAuthIdentities`.
-        // Let's try passing the password in `provider_metadata` as `{ password: "..." }`.
-
         logger.info(`Auth identity created. ID: ${authIdentity.id}`);
 
-        // 3. Link User and Auth Identity?
+        // 3. Link User and Auth Identity
         // In v2, the link is usually implicit via app_metadata or explicit via the remote link.
-        // However, the Auth module is standalone. The link is often conceptional or via the joiner.
+        // The Auth module is standalone. The link is often conceptional or via the joiner.
 
-        logger.info(`Admin user process complete. User ID: ${user.id}, Auth ID: ${authIdentity.id}`);
+        logger.info(`✅ Admin user process complete!`);
+        logger.info(`Email: ${email}`);
+        logger.info(`User ID: ${user.id}`);
+        logger.info(`Auth ID: ${authIdentity.id}`);
 
     } catch (error) {
         logger.error("Failed to create admin user", error);
+        throw error;
     }
 }

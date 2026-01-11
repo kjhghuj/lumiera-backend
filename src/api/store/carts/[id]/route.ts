@@ -1,6 +1,9 @@
 import { MedusaRequest, MedusaResponse } from "@medusajs/framework/http";
 import { ContainerRegistrationKeys } from "@medusajs/framework/utils";
 
+// UUID validation regex
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export async function GET(
     req: MedusaRequest,
     res: MedusaResponse
@@ -8,8 +11,14 @@ export async function GET(
     const query = req.scope.resolve(ContainerRegistrationKeys.QUERY);
     const cartId = req.params.id;
 
+    // Validate cart ID is provided
     if (!cartId) {
         return res.status(400).json({ error: "Cart ID is required" });
+    }
+
+    // Validate cart ID format (UUID)
+    if (!UUID_REGEX.test(cartId)) {
+        return res.status(400).json({ error: "Invalid cart ID format" });
     }
 
     try {
@@ -37,7 +46,8 @@ export async function GET(
 
         return res.json({ cart: carts[0] });
     } catch (error) {
-        console.error("Error fetching cart:", error);
-        return res.status(500).json({ error: "Internal server error" });
+        // Log the error but don't expose internal details to the client
+        console.error("[API Error] Failed to fetch cart:", error instanceof Error ? error.message : "Unknown error");
+        return res.status(500).json({ error: "Failed to retrieve cart" });
     }
 }

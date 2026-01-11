@@ -72,7 +72,7 @@ export default async function customerCreatedHandler({
         discountCode = code
         validUntil = formatDate(expiryDate)
 
-        logger.info(`[CustomerCreatedSubscriber] ✅ Promotion created: ${code} (valid until ${validUntil})`)
+        logger.info(`[CustomerCreatedSubscriber] ✅ Promotion created successfully (valid until ${validUntil})`)
 
     } catch (error) {
         logger.error(`[CustomerCreatedSubscriber] Failed to create promotion:`, error)

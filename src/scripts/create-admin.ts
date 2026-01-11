@@ -7,8 +7,20 @@ export default async function createAdminUser({ container }: ExecArgs) {
     const authModule = container.resolve(Modules.AUTH);
     const logger = container.resolve("logger");
 
-    const email = "admin@lumiera.com";
-    const password = "password123";
+    const email = process.env.ADMIN_EMAIL || "admin@lumiera.com";
+    const password = process.env.ADMIN_PASSWORD;
+
+    // Security: Require password to be set via environment variable
+    if (!password) {
+        logger.error("❌ ADMIN_PASSWORD environment variable is required");
+        logger.info("Usage: ADMIN_EMAIL=admin@example.com ADMIN_PASSWORD=yourSecurePassword npm run medusa exec ./src/scripts/create-admin.ts");
+        throw new Error("ADMIN_PASSWORD environment variable must be set");
+    }
+
+    if (password.length < 8) {
+        logger.error("❌ Password must be at least 8 characters long");
+        throw new Error("Password too short");
+    }
 
     logger.info(`Creating admin user: ${email}`);
 
@@ -18,17 +30,9 @@ export default async function createAdminUser({ container }: ExecArgs) {
             provider: "emailpass",
             entity_id: email,
             app_metadata: {
-                user_id: "", // Will update later or handled by link? 
-                // In v2, we usually create user then link or create identity first
+                user_id: "", // Will update later or handled by link
             }
         });
-
-        // Medusa v2 pattern: Create User -> Create Identity (via provider) -> Link
-        // Actually simpler: user command does this. Let's try to replicate what 'medusa user' does.
-        // Or even better, just use the `userModule.create` which might handle it if we pass the right args, 
-        // but usually we need to handle auth separately.
-
-        // Let's use the createUser Workflow if available, but here we are in a script.
 
         // Basic User creation
         const user = await userModule.createUsers({
@@ -37,13 +41,12 @@ export default async function createAdminUser({ container }: ExecArgs) {
             last_name: "User",
         });
 
-        logger.info(`User created with ID: ${user.id}`);
-
-        // We rely on the CLI usually. But let's try to just output the CLI command for the user 
-        // OR use the CLI programmatically.
-        // writing this script "from scratch" might be error prone regarding hashing.
+        logger.info(`✅ User created successfully`);
+        logger.info(`Email: ${email}`);
+        logger.info(`User ID: ${user.id}`);
 
     } catch (error) {
         logger.error("Failed to create user programmatically", error);
+        throw error;
     }
 }
