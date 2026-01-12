@@ -1,8 +1,6 @@
 import { MedusaRequest, MedusaResponse } from "@medusajs/framework/http";
 import { ContainerRegistrationKeys } from "@medusajs/framework/utils";
 
-// UUID validation regex
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export async function GET(
     req: MedusaRequest,
@@ -16,26 +14,43 @@ export async function GET(
         return res.status(400).json({ error: "Cart ID is required" });
     }
 
-    // Validate cart ID format (UUID)
-    if (!UUID_REGEX.test(cartId)) {
-        return res.status(400).json({ error: "Invalid cart ID format" });
-    }
 
     try {
         const { data: carts } = await query.graph({
             entity: "cart",
             fields: [
+                // Basic cart info
                 "id",
                 "email",
                 "currency_code",
                 "region_id",
+
+                // Calculated totals - CRITICAL for cart page
+                "total",
+                "subtotal",
+                "item_subtotal",
+                "discount_total",
+                "tax_total",
+                "shipping_total",
+                "item_tax_total",
+
+                // Items with variants
                 "items.*",
+                "items.adjustments.*",
                 "items.variant.*",
                 "items.variant.images.*",
                 "items.variant.product.id",
                 "items.variant.product.title",
                 "items.variant.product.thumbnail",
                 "items.variant.product.handle",
+
+                // Promotions/Coupons
+                "promotions.*",
+
+                // Region and addresses
+                "region.*",
+                "shipping_address.*",
+                "billing_address.*",
             ],
             filters: { id: cartId },
         });
@@ -51,3 +66,4 @@ export async function GET(
         return res.status(500).json({ error: "Failed to retrieve cart" });
     }
 }
+
