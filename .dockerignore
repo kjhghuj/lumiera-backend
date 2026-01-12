@@ -1,0 +1,69 @@
+# Dependencies
+node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment files
+.env
+.env.local
+.env.*.local
+.env.test
+
+# Git
+.git
+.gitignore
+
+# Build output
+dist
+.medusa
+
+# Logs
+*.log
+logs
+create_log.txt
+delete_log.txt
+inventory_debug_log.txt
+
+# Test files
+integration-tests
+*.test.ts
+*.test.js
+*.spec.ts
+*.spec.js
+jest.config.js
+
+# Development tools
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# Documentation
+README.md
+SECURITY.md
+STORE_API_DOCS.md
+VARIANT_IMAGES_GUIDE.md
+docs
+
+# Scripts (development only)
+check-*.js
+create-*.js
+create-*.ts
+fix-*.js
+link-*.js
+link-*.ts
+list-*.ts
+set-*.ts
+trigger-*.js
+update-*.ts
+
+# Docker
+Dockerfile
+.dockerignore
+docker-compose.yml
+
+# Misc
+.DS_Store
+keys.json

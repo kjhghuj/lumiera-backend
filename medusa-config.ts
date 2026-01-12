@@ -47,7 +47,7 @@ module.exports = defineConfig({
   ],
   admin: {
     // 启用中文语言支持
-    backendUrl: process.env.MEDUSA_BACKEND_URL || "http://localhost:9000",
+    backendUrl: process.env.MEDUSA_BACKEND_URL || "http://localhost:9030",
   }
 })
 

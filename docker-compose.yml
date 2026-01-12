@@ -11,21 +11,67 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - lumiera-network
 
   redis:
     image: redis:7-alpine
     container_name: lumiera-redis
     ports:
       - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: [ "CMD", "redis-cli", "ping" ]
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - lumiera-network
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: lumiera-backend
+    ports:
+      - "9030:9030"
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgres://postgres:postgres@postgres:5432/medusa-lumiera
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=${JWT_SECRET:-lumiera-jwt-secret-key-2024}
+      - COOKIE_SECRET=${COOKIE_SECRET:-lumiera-cookie-secret-key-2024}
+      - RESEND_API_KEY=${RESEND_API_KEY}
+      - RESEND_FROM_EMAIL=${RESEND_FROM_EMAIL}
+      - PORT=9030
+      - STORE_CORS=${STORE_CORS:-http://localhost:3000,http://localhost:8000,http://localhost:3030}
+      - ADMIN_CORS=${ADMIN_CORS:-http://localhost:5173,http://localhost:9030}
+      - AUTH_CORS=${AUTH_CORS:-http://localhost:5173,http://localhost:9030,http://localhost:8000,http://localhost:3000,http://localhost:3030}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:9030/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
+    networks:
+      - lumiera-network
 
 volumes:
   postgres_data:
+
+
+networks:
+  lumiera-network:
+    driver: bridge
