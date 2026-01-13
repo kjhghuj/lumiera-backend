@@ -56,7 +56,7 @@ export default async function customerCreatedHandler({
             code: code,
             type: "standard",
             status: "active", // 启用状态（非草稿）
-            is_automatic: true, // 自动应用方式
+            is_automatic: false, // 用户手动输入优惠码，可手动移除
             application_method: {
                 type: "percentage", // 百分比类型
                 value: 15, // 15%
@@ -72,7 +72,15 @@ export default async function customerCreatedHandler({
         discountCode = code
         validUntil = formatDate(expiryDate)
 
-        logger.info(`[CustomerCreatedSubscriber] ✅ Promotion created successfully (valid until ${validUntil})`)
+        // 更新客户 metadata，保存优惠券代码
+        await customerModuleService.updateCustomers(customer.id, {
+            metadata: {
+                ...customer.metadata,
+                coupons: [code] // 初始化优惠券数组，包含新生成的欢迎优惠券
+            }
+        })
+
+        logger.info(`[CustomerCreatedSubscriber] ✅ Promotion created and added to customer metadata (valid until ${validUntil})`)
 
     } catch (error) {
         logger.error(`[CustomerCreatedSubscriber] Failed to create promotion:`, error)
