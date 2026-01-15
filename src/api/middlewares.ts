@@ -14,7 +14,6 @@ export default defineMiddlewares({
     routes: [
         {
             matcher: "/store/*",
-            method: "OPTIONS",
             middlewares: [cors(corsOptions)],
         },
     ],
