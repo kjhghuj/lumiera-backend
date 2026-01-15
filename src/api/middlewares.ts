@@ -12,9 +12,9 @@ const corsOptions = {
 
 export default defineMiddlewares({
     routes: [
-        {
-            matcher: "/store/*",
-            middlewares: [cors(corsOptions)],
-        },
+        // {
+        //     matcher: "/store/*",
+        //     middlewares: [cors(corsOptions)],
+        // },
     ],
 })
