@@ -1,6 +1,0 @@
-Debugging inventory for Variant: variant_01KEE12AJ514Z9RE9ZZVJ7HXCW on SC: sc_01KEBDC2SHM1D1ZKYCW5R2BWKJ
-Sales Channel is linked to Stock Locations: sloc_01KEBDC2TX07FZ6N5Y20M7VV61
-Found Variant: variant_01KEE12AJ514Z9RE9ZZVJ7HXCW
-Variant is linked to 1 Inventory Items.
-Checking Inventory Item: iitem_01KEE12AJQ7JH9Z92ZMRFQ2NAY
-  [OK] Has levels at valid locations: sloc_01KEBDC2TX07FZ6N5Y20M7VV61 (Qty: 100)
