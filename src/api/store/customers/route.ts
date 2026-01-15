@@ -2,6 +2,8 @@
 import { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
 import { Modules } from "@medusajs/framework/utils"
 
+export const AUTHENTICATE = false
+
 export async function POST(req: MedusaRequest, res: MedusaResponse) {
   const customerService = req.scope.resolve(Modules.CUSTOMER)
   const authService = req.scope.resolve(Modules.AUTH)
