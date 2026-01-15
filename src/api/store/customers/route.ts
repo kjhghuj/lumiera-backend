@@ -17,7 +17,7 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
   try {
       // 1. Check if customer exists
       const customers = await customerService.listCustomers({
-        filters: { email: email },
+        email: email,
       })
 
       const existingCustomer = customers[0]
@@ -25,7 +25,7 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
       if (existingCustomer) {
         // 2. Check for existing Auth Identity
         const identities = await authService.listAuthIdentities({
-          filters: { entity_id: email }
+          entity_id: email,
         })
 
         if (identities.length > 0) {
