@@ -24,6 +24,7 @@ export async function GET(
                 "email",
                 "currency_code",
                 "region_id",
+                "completed_at",
 
                 // Calculated totals - CRITICAL for cart page
                 "total",
@@ -59,7 +60,13 @@ export async function GET(
             return res.status(404).json({ error: "Cart not found" });
         }
 
-        return res.json({ cart: carts[0] });
+        const cart = carts[0];
+
+        if (cart.completed_at) {
+            return res.status(404).json({ error: "Cart is already completed" });
+        }
+
+        return res.json({ cart });
     } catch (error) {
         // Log the error but don't expose internal details to the client
         console.error("[API Error] Failed to fetch cart:", error instanceof Error ? error.message : "Unknown error");
