@@ -33,7 +33,7 @@ export default async function orderPlacedHandler({
             channel: "email",
             template: "order_placed",
             data: {
-                id: order.display_id,
+                id: order.id,
                 total: `${order.total / 100} ${order.currency_code.toUpperCase()}`, // Assuming total is in cents
             },
         })
