@@ -2,12 +2,13 @@
 
 **Base URL**: `http://localhost:9000`  
 **版本**: v1.0  
-**最后更新**: 2026-01-08
+**最后更新**: 2026-01-21
 
 ---
 
 ## 目录
 - [认证](#认证)
+- [邮箱注册检查 API](#邮箱注册检查-api)
 - [商品详情 API](#商品详情-api)
 - [购物车 API](#购物车-api)
 - [错误处理](#错误处理)
@@ -21,6 +22,49 @@
 ```
 x-publishable-api-key: {your_publishable_key}
 ```
+
+---
+
+## 邮箱注册检查 API
+
+### 检查邮箱是否已注册
+
+检查指定邮箱地址是否已在系统中注册。
+
+**端点**: `POST /store/check-email`
+
+**请求 Body**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `email` | string | 是 | 要检查的邮箱地址 |
+
+**请求示例**:
+```bash
+curl -X POST http://localhost:9030/store/check-email \
+  -H "Content-Type: application/json" \
+  -H "x-publishable-api-key: YOUR_API_KEY" \
+  -d '{"email": "user@example.com"}'
+```
+
+**响应示例**:
+```json
+{
+  "email": "user@example.com",
+  "is_registered": true
+}
+```
+
+**响应字段说明**:
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `email` | string | 查询的邮箱地址（小写） |
+| `is_registered` | boolean | `true` 表示已注册，`false` 表示未注册 |
+
+**使用场景**:
+- 订单确认页：判断是否显示"创建账号"表单
+- 注册页：实时检查邮箱是否可用
+- 登录页：提示用户是否需要先注册
 
 ---
 
