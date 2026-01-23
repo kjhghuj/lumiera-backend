@@ -29,7 +29,7 @@ class ResendNotificationProviderService extends AbstractNotificationProviderServ
     async send(notification: any): Promise<{ id: string; to: string; status: string; data: Record<string, unknown> }> {
         const from = this.options.from || "onboarding@resend.dev"
         const { to, template, data } = notification
-        const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000"
+        const frontendUrl = process.env.STOREFRONT_URL || process.env.FRONTEND_URL || "http://localhost:3000"
 
         if (!to) {
             throw new Error("No 'to' address provided for notification")
