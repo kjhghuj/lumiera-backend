@@ -174,6 +174,189 @@ class ResendNotificationProviderService extends AbstractNotificationProviderServ
 
                 subject = `Welcome to Lumiera, ${firstName}`
 
+            } else if (template === 'order_placed') {
+                console.log(`[Resend] Using inline HTML template for order_placed`)
+
+                const firstName = data.first_name || "Valued Customer"
+                // Prioritize actual ID (ULID) over display_id (sequential number)
+                const fullOrderId = String(data.id || data.display_id || "N/A")
+                // Extract ULID from order ID (remove order_ prefix)
+                const orderId = fullOrderId.startsWith('order_') ? fullOrderId.substring(6) : fullOrderId
+                const orderTotal = data.total || "0.00"
+                const currencyCode = (data.currency_code || "USD").toUpperCase()
+
+                // Build items HTML if items are available
+                let itemsHtml = ""
+                if (data.items && Array.isArray(data.items)) {
+                    for (const item of data.items) {
+                        const itemName = item.title || item.product_title || "Product"
+                        const itemVariant = item.variant_title || ""
+                        const itemQty = item.quantity || 1
+                        const itemPrice = item.unit_price ? (item.unit_price / 100).toFixed(2) : "0.00"
+                        const itemImage = item.thumbnail || "https://placehold.co/90x110/f8f6f4/999999?text=Product"
+
+                        itemsHtml += `
+                        <tr>
+                            <td style="padding: 20px 0; border-bottom: 1px dashed #F0F0F0;">
+                                <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                                    <tbody><tr>
+                                        <td width="90" valign="top">
+                                            <img src="${itemImage}" alt="${itemName}" width="90" height="110" style="display: block; object-fit: cover; border-radius: 2px;">
+                                        </td>
+                                        <td valign="top" style="padding-left: 20px;">
+                                            <p style="margin: 0 0 8px 0; font-size: 16px; color: #3E3E3E; font-family: 'Playfair Display', Georgia, serif;">${itemName}</p>
+                                            ${itemVariant ? `<p style="margin: 0 0 5px 0; font-size: 13px; color: #999999; font-family: 'Lato', Helvetica, Arial, sans-serif;">${itemVariant}</p>` : ""}
+                                            <p style="margin: 0; font-size: 13px; color: #999999; font-family: 'Lato', Helvetica, Arial, sans-serif;">Qty: ${itemQty}</p>
+                                        </td>
+                                        <td valign="top" align="right" style="white-space: nowrap;">
+                                            <p style="margin: 0; font-size: 15px; color: #3E3E3E; font-family: 'Lato', Helvetica, Arial, sans-serif;">${currencyCode} ${itemPrice}</p>
+                                        </td>
+                                    </tr>
+                                </tbody></table>
+                            </td>
+                        </tr>`
+                    }
+                }
+
+                // Calculate subtotal and shipping
+                const subtotal = data.subtotal ? (data.subtotal / 100).toFixed(2) : orderTotal
+                const shipping = data.shipping_total ? (data.shipping_total / 100).toFixed(2) : "0.00"
+                const total = data.total ? (data.total / 100).toFixed(2) : orderTotal
+
+                htmlContent = `
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="x-apple-disable-message-reformatting">
+    <title>Your Order Confirmation - LUMIERA</title>
+    <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&family=Playfair+Display:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
+        table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
+        img { -ms-interpolation-mode: bicubic; border: 0; height: auto; line-height: 100%; outline: none; text-decoration: none; display: block; }
+        table { border-collapse: collapse !important; }
+        body { height: 100% !important; margin: 0 !important; padding: 0 !important; width: 100% !important; background-color: #FDFCF8; -webkit-font-smoothing: antialiased; }
+        .font-serif { font-family: 'Playfair Display', Georgia, 'Times New Roman', serif; }
+        .font-sans { font-family: 'Lato', Helvetica, Arial, sans-serif; }
+        @media only screen and (max-width: 600px) {
+            .container { width: 100% !important; padding: 0 !important; }
+            .mobile-pad { padding-left: 20px !important; padding-right: 20px !important; }
+            .img-full { width: 100% !important; height: auto !important; }
+        }
+    </style>
+</head>
+<body style="margin: 0; padding: 0; background-color: #FDFCF8;">
+    <table role="presentation" align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #F0F0F0;">
+        <tbody>
+            <!-- Header Logo -->
+            <tr>
+                <td align="center" style="padding: 40px 0 20px 0;">
+                    <h1 class="font-serif" style="margin: 0; font-size: 26px; letter-spacing: 0.2em; text-transform: uppercase; color: #3E3E3E; font-family: 'Playfair Display', Georgia, serif;">LUMIERA</h1>
+                </td>
+            </tr>
+
+            <!-- Main Content -->
+            <tr>
+                <td align="center" class="mobile-pad" style="padding: 0 40px 30px 40px;">
+                    <p class="font-sans" style="margin: 0 0 15px 0; font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em; color: #999999; font-family: 'Lato', Helvetica, Arial, sans-serif;">Order #${orderId}</p>
+                    <h2 class="font-serif" style="margin: 0 0 25px 0; font-size: 32px; line-height: 1.2; color: #3E3E3E; font-weight: 400; font-family: 'Playfair Display', Georgia, serif;">Your ritual awaits.</h2>
+                    <p class="font-sans" style="margin: 0 0 15px 0; font-size: 15px; line-height: 1.7; color: #555555; font-family: 'Lato', Helvetica, Arial, sans-serif;">
+                        Hello ${firstName}, thank you for choosing LUMIERA. We are preparing your order with care. As promised, it will be shipped in <strong>100% discreet packaging</strong> to ensure your privacy.
+                    </p>
+                </td>
+            </tr>
+
+            <!-- Order Items -->
+            ${itemsHtml ? `
+            <tr>
+                <td class="mobile-pad" style="padding: 10px 40px 0 40px;">
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-top: 1px solid #F0F0F0;">
+                        <tbody>${itemsHtml}</tbody>
+                    </table>
+                </td>
+            </tr>
+            ` : ""}
+
+            <!-- Order Summary -->
+            <tr>
+                <td class="mobile-pad" style="padding: 0 40px 35px 40px;">
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                        <tbody>
+                            <tr>
+                                <td class="font-sans" style="padding-top: 10px; font-size: 14px; color: #787878; font-family: 'Lato', Helvetica, Arial, sans-serif;">Subtotal</td>
+                                <td align="right" class="font-sans" style="padding-top: 10px; font-size: 14px; color: #3E3E3E; font-family: 'Lato', Helvetica, Arial, sans-serif;">${currencyCode} ${subtotal}</td>
+                            </tr>
+                            <tr>
+                                <td class="font-sans" style="padding-top: 12px; padding-bottom: 15px; font-size: 14px; color: #787878; font-family: 'Lato', Helvetica, Arial, sans-serif;">Shipping (Standard Discreet)</td>
+                                <td align="right" class="font-sans" style="padding-top: 12px; padding-bottom: 15px; font-size: 14px; color: #3E3E3E; font-family: 'Lato', Helvetica, Arial, sans-serif;">${currencyCode} ${shipping}</td>
+                            </tr>
+                            <tr>
+                                <td class="font-serif" style="padding-top: 20px; font-size: 20px; font-weight: 400; border-top: 1px solid #E5E5E5; color: #3E3E3E; font-family: 'Playfair Display', Georgia, serif;">Total</td>
+                                <td align="right" class="font-sans" style="padding-top: 20px; font-size: 22px; font-weight: 700; border-top: 1px solid #E5E5E5; color: #B08B7D; font-family: 'Lato', Helvetica, Arial, sans-serif;">${currencyCode} ${total}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </td>
+            </tr>
+
+            <!-- CTA Button -->
+            <tr>
+                <td align="center" class="mobile-pad" style="padding: 0 40px 45px 40px;">
+                    <a href="${frontendUrl}/order/lookup?order=${orderId}&email=${data.email || ""}" target="_blank" style="background-color: #3E3E3E; color: #ffffff; padding: 16px 35px; text-decoration: none; font-family: 'Lato', sans-serif; font-size: 13px; text-transform: uppercase; letter-spacing: 0.15em; font-weight: bold; display: inline-block; border-radius: 2px;">
+                        View Order Details
+                    </a>
+                </td>
+            </tr>
+
+            <!-- What happens next -->
+            <tr>
+                <td class="mobile-pad" style="background-color: #F9F8F6; padding: 35px 40px;">
+                    <h3 class="font-serif" style="margin: 0 0 20px 0; font-size: 18px; color: #3E3E3E; font-weight: 400; font-family: 'Playfair Display', Georgia, serif;">What happens next?</h3>
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                        <tbody>
+                            <tr>
+                                <td width="25" valign="top" style="padding-top: 4px;">
+                                    <div style="width: 8px; height: 8px; background-color: #B08B7D; border-radius: 50%;"></div>
+                                </td>
+                                <td class="font-sans" style="padding-bottom: 15px; font-size: 14px; line-height: 1.6; color: #555555; font-family: 'Lato', Helvetica, Arial, sans-serif;">
+                                    <strong>Order Processing:</strong> Please allow 1-2 business days for us to prepare your order gently.
+                                </td>
+                            </tr>
+                            <tr>
+                                <td width="25" valign="top" style="padding-top: 4px;">
+                                    <div style="width: 8px; height: 8px; background-color: #B08B7D; border-radius: 50%;"></div>
+                                </td>
+                                <td class="font-sans" style="padding-bottom: 15px; font-size: 14px; line-height: 1.6; color: #555555; font-family: 'Lato', Helvetica, Arial, sans-serif;">
+                                    <strong>Shipping & Tracking:</strong> Once shipped, you'll receive a separate email with a discreet tracking link.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </td>
+            </tr>
+
+            <!-- Footer -->
+            <tr>
+                <td align="center" class="mobile-pad" style="padding: 40px 40px 30px 40px; background-color: #FDFCF8;">
+                    <p class="font-sans" style="margin: 0 0 12px 0; font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: #999999; font-family: 'Lato', Helvetica, Arial, sans-serif;">
+                        LUMIERA LTD • London, United Kingdom
+                    </p>
+                    <p class="font-sans" style="margin: 0; font-size: 12px; color: #787878; font-family: 'Lato', Helvetica, Arial, sans-serif;">
+                        Questions? <a href="mailto:support@lumierawellness.com" style="color: #B08B7D; text-decoration: none;">support@lumierawellness.com</a>
+                    </p>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</body>
+</html>
+`
+
+                subject = `Order Confirmation #${orderId}`
+
             } else {  // 回退到 Handlebars 模板
                 console.log(`[Resend] Using Handlebars template for ${template}`)
                 const templateBaseDir = path.join(process.cwd(), "data", "templates", template)

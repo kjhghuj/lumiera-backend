@@ -14,7 +14,18 @@ export default async function orderPlacedHandler({
 
     const { data: orders } = await query.graph({
         entity: "order",
-        fields: ["id", "total", "email", "display_id", "currency_code"],
+        fields: [
+            "id",
+            "display_id",
+            "email",
+            "total",
+            "subtotal",
+            "shipping_total",
+            "currency_code",
+            "items.*",
+            "shipping_address.first_name",
+            "shipping_address.last_name"
+        ],
         filters: { id: data.id }
     })
 
@@ -22,6 +33,13 @@ export default async function orderPlacedHandler({
 
     if (!order) {
         console.warn(`[OrderPlacedSubscriber] Order ${data.id} not found.`)
+        return
+    }
+
+    const firstName = order.shipping_address?.first_name || "Valued Customer"
+
+    if (!order.email) {
+        console.warn(`[OrderPlacedSubscriber] Order ${data.id} has no email address.`)
         return
     }
 
@@ -34,7 +52,14 @@ export default async function orderPlacedHandler({
             template: "order_placed",
             data: {
                 id: order.id,
-                total: `${order.total / 100} ${order.currency_code.toUpperCase()}`, // Assuming total is in cents
+                display_id: order.display_id,
+                email: order.email,
+                first_name: firstName,
+                total: order.total,
+                subtotal: order.subtotal,
+                shipping_total: order.shipping_total,
+                currency_code: order.currency_code,
+                items: order.items || [],
             },
         })
         console.log(`[OrderPlacedSubscriber] Notification triggered successfully.`)
