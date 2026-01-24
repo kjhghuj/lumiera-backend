@@ -195,6 +195,8 @@ class ResendNotificationProviderService extends AbstractNotificationProviderServ
                         const itemPrice = item.unit_price ? (item.unit_price / 100).toFixed(2) : "0.00"
                         const itemImage = item.thumbnail || "https://placehold.co/90x110/f8f6f4/999999?text=Product"
 
+                        const itemTotal = item.unit_price ? ((item.unit_price * itemQty) / 100).toFixed(2) : "0.00"
+
                         itemsHtml += `
                         <tr>
                             <td style="padding: 20px 0; border-bottom: 1px dashed #F0F0F0;">
@@ -206,10 +208,10 @@ class ResendNotificationProviderService extends AbstractNotificationProviderServ
                                         <td valign="top" style="padding-left: 20px;">
                                             <p style="margin: 0 0 8px 0; font-size: 16px; color: #3E3E3E; font-family: 'Playfair Display', Georgia, serif;">${itemName}</p>
                                             ${itemVariant ? `<p style="margin: 0 0 5px 0; font-size: 13px; color: #999999; font-family: 'Lato', Helvetica, Arial, sans-serif;">${itemVariant}</p>` : ""}
-                                            <p style="margin: 0; font-size: 13px; color: #999999; font-family: 'Lato', Helvetica, Arial, sans-serif;">Qty: ${itemQty}</p>
+                                            <p style="margin: 0; font-size: 13px; color: #999999; font-family: 'Lato', Helvetica, Arial, sans-serif;">Qty: ${itemQty} x ${currencyCode} ${itemPrice}</p>
                                         </td>
                                         <td valign="top" align="right" style="white-space: nowrap;">
-                                            <p style="margin: 0; font-size: 15px; color: #3E3E3E; font-family: 'Lato', Helvetica, Arial, sans-serif;">${currencyCode} ${itemPrice}</p>
+                                            <p style="margin: 0; font-size: 15px; color: #3E3E3E; font-family: 'Lato', Helvetica, Arial, sans-serif;">${currencyCode} ${itemTotal}</p>
                                         </td>
                                     </tr>
                                 </tbody></table>
