@@ -225,6 +225,11 @@ class ResendNotificationProviderService extends AbstractNotificationProviderServ
                 const shipping = data.shipping_total ? (data.shipping_total / 100).toFixed(2) : "0.00"
                 const total = data.total ? (data.total / 100).toFixed(2) : orderTotal
 
+                // Extract shipping method name
+                // data.shipping_methods is usually an array. We take the first one or fallback.
+                // In some contexts (like swap/return), it might be different, but for order_placed it's standard.
+                const shippingName = data.shipping_methods?.[0]?.name || "Shipping"
+
                 htmlContent = `
 <!DOCTYPE html>
 <html lang="en" xmlns="http://www.w3.org/1999/xhtml">
@@ -292,7 +297,7 @@ class ResendNotificationProviderService extends AbstractNotificationProviderServ
                                 <td align="right" class="font-sans" style="padding-top: 10px; font-size: 14px; color: #3E3E3E; font-family: 'Lato', Helvetica, Arial, sans-serif;">${currencyCode} ${subtotal}</td>
                             </tr>
                             <tr>
-                                <td class="font-sans" style="padding-top: 12px; padding-bottom: 15px; font-size: 14px; color: #787878; font-family: 'Lato', Helvetica, Arial, sans-serif;">Shipping (Standard Discreet)</td>
+                                <td class="font-sans" style="padding-top: 12px; padding-bottom: 15px; font-size: 14px; color: #787878; font-family: 'Lato', Helvetica, Arial, sans-serif;">${shippingName}</td>
                                 <td align="right" class="font-sans" style="padding-top: 12px; padding-bottom: 15px; font-size: 14px; color: #3E3E3E; font-family: 'Lato', Helvetica, Arial, sans-serif;">${currencyCode} ${shipping}</td>
                             </tr>
                             <tr>
