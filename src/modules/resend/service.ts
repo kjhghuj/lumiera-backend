@@ -182,7 +182,10 @@ class ResendNotificationProviderService extends AbstractNotificationProviderServ
                 const fullOrderId = String(data.id || data.display_id || "N/A")
                 // Extract ULID from order ID (remove order_ prefix)
                 const orderId = fullOrderId.startsWith('order_') ? fullOrderId.substring(6) : fullOrderId
-                const orderTotal = data.total || "0.00"
+
+                const rawTotal = data.total || 0;
+                const formattedTotal = (rawTotal / 100).toFixed(2);
+
                 const currencyCode = (data.currency_code || "USD").toUpperCase()
 
                 // Build items HTML if items are available
@@ -221,9 +224,9 @@ class ResendNotificationProviderService extends AbstractNotificationProviderServ
                 }
 
                 // Calculate subtotal and shipping
-                const subtotal = data.subtotal ? (data.subtotal / 100).toFixed(2) : orderTotal
+                const subtotal = data.subtotal ? (data.subtotal / 100).toFixed(2) : formattedTotal
                 const shipping = data.shipping_total ? (data.shipping_total / 100).toFixed(2) : "0.00"
-                const total = data.total ? (data.total / 100).toFixed(2) : orderTotal
+                const total = data.total ? (data.total / 100).toFixed(2) : formattedTotal
 
                 // Extract shipping method name
                 // data.shipping_methods is usually an array. We take the first one or fallback.
