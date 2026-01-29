@@ -7,7 +7,7 @@ if (!process.env.KLAVIYO_PRIVATE_KEY) {
 const session = new ApiKeySession(process.env.KLAVIYO_PRIVATE_KEY || "")
 const profilesApi = new ProfilesApi(session)
 
-export const subscribeToNewsletter = async (email: string) => {
+export const subscribeToNewsletter = async (email: string, customProperties?: Record<string, any>) => {
     if (!process.env.KLAVIYO_LIST_ID) {
         throw new Error('KLAVIYO_LIST_ID is not set')
     }
@@ -26,6 +26,7 @@ export const subscribeToNewsletter = async (email: string) => {
                                 type: 'profile',
                                 attributes: {
                                     email: email,
+                                    properties: customProperties,  // Add custom properties here
                                     subscriptions: {
                                         email: {
                                             marketing: {

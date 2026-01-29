@@ -12,9 +12,6 @@ const corsOptions = {
 
 export default defineMiddlewares({
     routes: [
-        // {
-        //     matcher: "/store/*",
-        //     middlewares: [cors(corsOptions)],
-        // },
+        // Note: /store/orders/transfer uses email verification for security, not auth middleware
     ],
 })

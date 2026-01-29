@@ -20,6 +20,7 @@ export const verifyTurnstileToken = async (token: string): Promise<boolean> => {
                 headers: {
                     "Content-Type": "application/x-www-form-urlencoded",
                 },
+                timeout: 10000, // 10 seconds timeout
             }
         );
 
