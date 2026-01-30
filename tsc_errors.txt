@@ -1,0 +1,25 @@
+﻿node.exe : npm warn Unknown p
+roject config "public-hoist-p
+attern". This will stop worki
+ng in the next major version 
+of npm.
+所在位置 行:1 字符: 1
++ & "C:\nvm4w\nodejs/node.exe
+" "D:\node\npm_cache/node_mod
+ules/npm/bin/ ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~
+    + CategoryInfo           
+   : NotSpecified: (npm war  
+  n Unknow...version of np   
+ m.:String) [], RemoteExc    
+eption
+    + FullyQualifiedErrorId  
+   : NativeCommandError
+ 
+src/scripts/create-random-products.ts(172,29): error TS2339: Property 'inventory_items' does not exist on type 'ProductVariantDTO'.
+src/scripts/create-random-products.ts(173,57): error TS2339: Property 'inventory_items' does not exist on type 'ProductVariantDTO'.
+src/scripts/create-random-products.ts(196,39): error TS2339: Property 'prices' does not exist on type 'ProductVariantDTO'.
+src/subscribers/cleanup-auth-identity.ts(48,17): error TS2353: Object literal may only specify known properties, and 'entity_id' does not exist in type 'FilterableAuthIdentityProps'.
+src/workflows/steps/delete-associated-auth-identities.ts(31,21): error TS2353: Object literal may only specify known properties, and 'entity_id' does not exist in type 'FilterableAuthIdentityProps'.

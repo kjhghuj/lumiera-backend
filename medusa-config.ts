@@ -16,6 +16,27 @@ module.exports = defineConfig({
   },
   modules: [
     {
+      resolve: "@medusajs/medusa/file",
+      options: {
+        providers: [
+          {
+            resolve: "@medusajs/medusa/file-s3",
+            id: "s3",
+            options: {
+              file_url: process.env.S3_FILE_URL,
+              access_key_id: process.env.S3_ACCESS_KEY_ID,
+              secret_access_key: process.env.S3_SECRET_ACCESS_KEY,
+              region: process.env.S3_REGION || "auto",
+              bucket: process.env.S3_BUCKET,
+              endpoint: process.env.S3_ENDPOINT,
+              // Cloudflare R2 通常不需要 s3ForcePathStyle，但如果遇到签名错误可尝试开启
+              // s3ForcePathStyle: true, 
+            },
+          },
+        ],
+      },
+    },
+    {
       resolve: "@medusajs/medusa/notification",
       options: {
         providers: [

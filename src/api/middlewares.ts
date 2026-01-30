@@ -12,6 +12,7 @@ const corsOptions = {
 
 export default defineMiddlewares({
     routes: [
-        // Note: /store/orders/transfer uses email verification for security, not auth middleware
+        // Static files are served via /api/static/[[...path]]/route.ts
     ],
 })
+
