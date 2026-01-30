@@ -108,10 +108,7 @@ export async function POST(
         }
 
         // 2. Sync to Klaviyo
-        await subscribeToNewsletter(email, {
-            discount_code: createdCode,
-            source: "Website Footer"
-        });
+        await subscribeToNewsletter(email);
 
         res.status(200).json({
             message: "Successfully subscribed",
