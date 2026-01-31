@@ -1,5 +1,6 @@
 import { defineMiddlewares } from "@medusajs/medusa"
 import cors from "cors"
+import { productImageCleanupMiddleware } from "./middlewares/product-image-cleanup"
 
 const STORE_CORS = process.env.STORE_CORS || "http://localhost:3030"
 
@@ -12,7 +13,12 @@ const corsOptions = {
 
 export default defineMiddlewares({
     routes: [
-        // Static files are served via /api/static/[[...path]]/route.ts
+        {
+            matcher: "/admin/products/:id",
+            method: "POST",
+            middlewares: [productImageCleanupMiddleware],
+        },
     ],
 })
+
 
