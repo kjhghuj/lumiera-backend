@@ -85,9 +85,9 @@ const ProductDetailStoryWidget = ({ data }: DetailWidgetProps<AdminProduct>) => 
             const result = await response.json()
             const uploadedFiles = result.files || []
 
-            if (uploadedFiles.length > 0) {
-                // Create a document fragment to hold all images
-                const fragment = document.createDocumentFragment()
+            if (uploadedFiles.length > 0 && editorRef.current) {
+                // Focus the editor first
+                editorRef.current.focus()
 
                 for (const uploadedFile of uploadedFiles) {
                     if (uploadedFile?.url) {
@@ -97,24 +97,30 @@ const ProductDetailStoryWidget = ({ data }: DetailWidgetProps<AdminProduct>) => 
                         img.style.height = 'auto'
                         img.style.margin = '8px 0'
                         img.style.borderRadius = '8px'
-                        fragment.appendChild(img)
+                        img.style.display = 'block'
 
-                        // Add a line break after each image
-                        fragment.appendChild(document.createElement('br'))
+                        // Try to insert at cursor, otherwise append to end
+                        const selection = window.getSelection()
+                        if (selection && selection.rangeCount > 0 && editorRef.current.contains(selection.anchorNode)) {
+                            const range = selection.getRangeAt(0)
+                            range.deleteContents()
+                            range.insertNode(img)
+                            range.setStartAfter(img)
+                            range.setEndAfter(img)
+                            selection.removeAllRanges()
+                            selection.addRange(range)
+
+                            // Add line break
+                            const br = document.createElement('br')
+                            range.insertNode(br)
+                            range.setStartAfter(br)
+                            range.setEndAfter(br)
+                        } else {
+                            // Append to end of editor
+                            editorRef.current.appendChild(img)
+                            editorRef.current.appendChild(document.createElement('br'))
+                        }
                     }
-                }
-
-                // Insert all images at cursor position or at end
-                const selection = window.getSelection()
-                if (selection && selection.rangeCount > 0) {
-                    const range = selection.getRangeAt(0)
-                    range.deleteContents()
-                    range.insertNode(fragment)
-                    range.collapse(false)
-                    selection.removeAllRanges()
-                    selection.addRange(range)
-                } else if (editorRef.current) {
-                    editorRef.current.appendChild(fragment)
                 }
 
                 handleContentChange()
