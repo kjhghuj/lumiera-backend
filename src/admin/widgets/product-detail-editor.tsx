@@ -1,48 +1,18 @@
 import { defineWidgetConfig } from "@medusajs/admin-sdk"
-import { Container, Heading, Button, Text, Label, Textarea, Toaster, toast } from "@medusajs/ui"
-import { useState, useEffect, useRef } from "react"
+import { Container, Heading, Button, Text, Toaster, toast } from "@medusajs/ui"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { DetailWidgetProps, AdminProduct } from "@medusajs/framework/types"
+import { DocumentText, Plus, ArrowPath } from "@medusajs/icons"
 
 // ============================================================================
-// Type Definitions
+// Product Detail Story Widget - 简洁版富文本编辑器
 // ============================================================================
 
-type SectionType = 'image_full' | 'text_block'
-
-interface DetailSection {
-    id: string
-    type: SectionType
-    content: string        // 文本内容 或 图片URL
-    fileId?: string        // 文件ID，用于删除
-    meta?: {
-        alt?: string
-    }
-}
-
-// ============================================================================
-// Utility Functions
-// ============================================================================
-
-const generateId = (): string => {
-    return crypto.randomUUID()
-}
-
-// ============================================================================
-// Widget Component
-// ============================================================================
-
-const ProductDetailEditorWidget = ({ data }: DetailWidgetProps<AdminProduct>) => {
-    // State
-    const [sections, setSections] = useState<DetailSection[]>([])
+const ProductDetailStoryWidget = ({ data }: DetailWidgetProps<AdminProduct>) => {
     const [isSaving, setIsSaving] = useState(false)
-    const [isUploading, setIsUploading] = useState(false)
     const [isDirty, setIsDirty] = useState(false)
-
-    // Text input state
-    const [showTextInput, setShowTextInput] = useState(false)
-    const [newTextContent, setNewTextContent] = useState('')
-
-    // File input ref
+    const [isUploading, setIsUploading] = useState(false)
+    const editorRef = useRef<HTMLDivElement>(null)
     const fileInputRef = useRef<HTMLInputElement>(null)
 
     // --------------------------------------------------------------------------
@@ -50,29 +20,59 @@ const ProductDetailEditorWidget = ({ data }: DetailWidgetProps<AdminProduct>) =>
     // --------------------------------------------------------------------------
 
     useEffect(() => {
-        if (data?.metadata?.detail_sections) {
-            const loadedSections = data.metadata.detail_sections as DetailSection[]
-            console.log('[ProductDetailEditor] Loading sections from metadata:', loadedSections)
-            console.log('[ProductDetailEditor] FileIds in loaded sections:',
-                loadedSections.map(s => ({ id: s.id, type: s.type, fileId: s.fileId || 'MISSING' }))
-            )
-            setSections(Array.isArray(loadedSections) ? loadedSections : [])
-        } else {
-            console.log('[ProductDetailEditor] No detail_sections in metadata, initializing empty')
-            setSections([])
+        if (data?.metadata?.detail_story) {
+            const story = data.metadata.detail_story as string
+            if (editorRef.current) {
+                editorRef.current.innerHTML = story
+            }
         }
     }, [data])
 
     // --------------------------------------------------------------------------
-    // Upload Handler
+    // Content Change Handler
     // --------------------------------------------------------------------------
 
-    const handleFileUpload = async (file: File): Promise<{ url: string; id: string } | null> => {
+    const handleContentChange = useCallback(() => {
+        if (editorRef.current) {
+            setIsDirty(true)
+        }
+    }, [])
+
+    // --------------------------------------------------------------------------
+    // Paste Handler - 处理粘贴图片
+    // --------------------------------------------------------------------------
+
+    const handlePaste = async (e: React.ClipboardEvent) => {
+        const items = e.clipboardData.items
+        const imageFiles: File[] = []
+
+        for (let i = 0; i < items.length; i++) {
+            if (items[i].type.startsWith('image/')) {
+                const file = items[i].getAsFile()
+                if (file) imageFiles.push(file)
+            }
+        }
+
+        if (imageFiles.length > 0) {
+            e.preventDefault()
+            await uploadAndInsertImages(imageFiles)
+        }
+    }
+
+    // --------------------------------------------------------------------------
+    // Upload Multiple Images
+    // --------------------------------------------------------------------------
+
+    const uploadAndInsertImages = async (files: File[]) => {
+        if (files.length === 0) return
+
         setIsUploading(true)
 
         try {
             const formData = new FormData()
-            formData.append('files', file)
+            for (const file of files) {
+                formData.append('files', file)
+            }
 
             const response = await fetch('/admin/uploads', {
                 method: 'POST',
@@ -80,190 +80,164 @@ const ProductDetailEditorWidget = ({ data }: DetailWidgetProps<AdminProduct>) =>
                 body: formData,
             })
 
-            if (!response.ok) {
-                throw new Error(`Upload failed with status: ${response.status}`)
-            }
+            if (!response.ok) throw new Error('Upload failed')
 
             const result = await response.json()
+            const uploadedFiles = result.files || []
 
-            if (result.files && result.files.length > 0) {
-                return {
-                    url: result.files[0].url,
-                    id: result.files[0].id
+            if (uploadedFiles.length > 0) {
+                // Create a document fragment to hold all images
+                const fragment = document.createDocumentFragment()
+
+                for (const uploadedFile of uploadedFiles) {
+                    if (uploadedFile?.url) {
+                        const img = document.createElement('img')
+                        img.src = uploadedFile.url
+                        img.style.maxWidth = '100%'
+                        img.style.height = 'auto'
+                        img.style.margin = '8px 0'
+                        img.style.borderRadius = '8px'
+                        fragment.appendChild(img)
+
+                        // Add a line break after each image
+                        fragment.appendChild(document.createElement('br'))
+                    }
                 }
-            }
 
-            throw new Error('No file URL returned from upload')
+                // Insert all images at cursor position or at end
+                const selection = window.getSelection()
+                if (selection && selection.rangeCount > 0) {
+                    const range = selection.getRangeAt(0)
+                    range.deleteContents()
+                    range.insertNode(fragment)
+                    range.collapse(false)
+                    selection.removeAllRanges()
+                    selection.addRange(range)
+                } else if (editorRef.current) {
+                    editorRef.current.appendChild(fragment)
+                }
+
+                handleContentChange()
+                toast.success(`已插入 ${uploadedFiles.length} 张图片`)
+            }
         } catch (error) {
-            console.error('[ProductDetailEditor] File upload error:', error)
-            toast.error("Upload Failed", {
-                description: "Failed to upload image. Please try again.",
-            })
-            return null
+            console.error('[DetailStory] Upload error:', error)
+            toast.error("上传失败")
         } finally {
             setIsUploading(false)
         }
     }
 
     // --------------------------------------------------------------------------
-    // Delete File Handler
+    // File Select Handler (Multiple)
     // --------------------------------------------------------------------------
 
-    const handleFileDelete = async (fileId: string): Promise<boolean> => {
-        console.log('[ProductDetailEditor] handleFileDelete called with fileId:', fileId)
+    const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = e.target.files
+        if (!files || files.length === 0) return
 
-        try {
-            const response = await fetch(`/admin/uploads/${fileId}`, {
-                method: 'DELETE',
-                credentials: 'include',
-            })
-
-            console.log('[ProductDetailEditor] Delete response status:', response.status)
-
-            if (!response.ok) {
-                const errorText = await response.text()
-                console.error('[ProductDetailEditor] File delete failed:', response.status, errorText)
-                return false
+        const imageFiles: File[] = []
+        for (let i = 0; i < files.length; i++) {
+            if (files[i].type.startsWith('image/')) {
+                imageFiles.push(files[i])
             }
-
-            const result = await response.json()
-            console.log('[ProductDetailEditor] Delete response:', result)
-            return true
-        } catch (error) {
-            console.error('[ProductDetailEditor] File delete error:', error)
-            return false
-        }
-    }
-
-    // --------------------------------------------------------------------------
-    // Section Handlers
-    // --------------------------------------------------------------------------
-
-    const handleAddTextSection = () => {
-        if (!newTextContent.trim()) {
-            toast.error("Empty Content", {
-                description: "Please enter some text content.",
-            })
-            return
         }
 
-        const newSection: DetailSection = {
-            id: generateId(),
-            type: 'text_block',
-            content: newTextContent.trim(),
+        if (imageFiles.length > 0) {
+            await uploadAndInsertImages(imageFiles)
         }
 
-        setSections(prev => [...prev, newSection])
-        setNewTextContent('')
-        setShowTextInput(false)
-        setIsDirty(true)
-
-        toast.success("Section Added", {
-            description: "Text section added successfully.",
-        })
-    }
-
-    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0]
-        if (!file) return
-
-        if (!file.type.startsWith('image/')) {
-            toast.error("Invalid File", {
-                description: "Please select an image file.",
-            })
-            return
-        }
-
-        const result = await handleFileUpload(file)
-        if (result) {
-            const newSection: DetailSection = {
-                id: generateId(),
-                type: 'image_full',
-                content: result.url,
-                fileId: result.id,
-                meta: {
-                    alt: file.name.replace(/\.[^/.]+$/, ''),
-                },
-            }
-
-            setSections(prev => [...prev, newSection])
-            setIsDirty(true)
-
-            toast.success("Section Added", {
-                description: "Image section added successfully.",
-            })
-        }
-
-        // Clear file input
         if (fileInputRef.current) {
             fileInputRef.current.value = ''
         }
     }
 
-    const handleDeleteSection = async (id: string) => {
-        const sectionToDelete = sections.find(s => s.id === id)
+    // --------------------------------------------------------------------------
+    // Save Handler (with R2 cleanup)
+    // --------------------------------------------------------------------------
 
-        console.log('[ProductDetailEditor] Deleting section:', {
-            id,
-            type: sectionToDelete?.type,
-            fileId: sectionToDelete?.fileId
-        })
-
-        // Delete file from server if exists
-        if (sectionToDelete?.fileId && sectionToDelete.type === 'image_full') {
-            console.log('[ProductDetailEditor] Attempting to delete file from R2:', sectionToDelete.fileId)
-            const deleted = await handleFileDelete(sectionToDelete.fileId)
-            if (deleted) {
-                console.log('[ProductDetailEditor] ✅ File deleted from R2 successfully')
-            } else {
-                console.error('[ProductDetailEditor] ❌ Failed to delete file from R2')
-            }
-        } else {
-            console.log('[ProductDetailEditor] No file to delete (no fileId or not image_full)')
+    // Extract image URLs from HTML content
+    const extractImageUrls = (html: string): string[] => {
+        const urls: string[] = []
+        const imgRegex = /<img[^>]+src="([^"]+)"/g
+        let match
+        while ((match = imgRegex.exec(html)) !== null) {
+            urls.push(match[1])
         }
-
-        setSections(prev => prev.filter(s => s.id !== id))
-        setIsDirty(true)
-
-        toast.success("Section Deleted", {
-            description: "Section removed successfully.",
-        })
+        return urls
     }
 
-    // --------------------------------------------------------------------------
-    // Save Handler
-    // --------------------------------------------------------------------------
+    // Extract file key from URL
+    const extractFileKeyFromUrl = (url: string): string | null => {
+        try {
+            const urlObj = new URL(url)
+            const pathname = urlObj.pathname
+            return pathname.startsWith('/') ? pathname.slice(1) : pathname
+        } catch {
+            return null
+        }
+    }
 
     const handleSave = async () => {
+        if (!editorRef.current) return
+
         setIsSaving(true)
+
         try {
+            const htmlContent = editorRef.current.innerHTML
+            const originalHtml = (data.metadata?.detail_story as string) || ""
+
+            // Find removed images
+            const originalImages = extractImageUrls(originalHtml)
+            const currentImages = extractImageUrls(htmlContent)
+            const removedImages = originalImages.filter(url => !currentImages.includes(url))
+
+            console.log('[DetailStory] Original images:', originalImages.length)
+            console.log('[DetailStory] Current images:', currentImages.length)
+            console.log('[DetailStory] Removed images:', removedImages)
+
+            // Save the new content
             const response = await fetch(`/admin/products/${data.id}`, {
                 method: 'POST',
                 credentials: 'include',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     metadata: {
                         ...data.metadata,
-                        detail_sections: sections,
+                        detail_story: htmlContent,
                     },
                 }),
             })
 
-            if (!response.ok) {
-                throw new Error('Failed to save product details')
+            if (!response.ok) throw new Error('Save failed')
+
+            // Delete removed images from R2
+            if (removedImages.length > 0) {
+                for (const imageUrl of removedImages) {
+                    const fileKey = extractFileKeyFromUrl(imageUrl)
+                    if (fileKey) {
+                        try {
+                            await fetch('/admin/delete-file', {
+                                method: 'POST',
+                                credentials: 'include',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ fileKey }),
+                            })
+                            console.log('[DetailStory] Deleted R2 file:', fileKey)
+                        } catch (err) {
+                            console.warn('[DetailStory] Failed to delete R2 file:', fileKey, err)
+                        }
+                    }
+                }
+                toast.success("保存成功", { description: `已清理 ${removedImages.length} 个未使用的图片` })
+            } else {
+                toast.success("保存成功")
             }
 
-            toast.success("Saved", {
-                description: "Product detail sections saved successfully!",
-            })
             setIsDirty(false)
         } catch (error) {
-            console.error('[ProductDetailEditor] Save error:', error)
-            toast.error("Error", {
-                description: "Failed to save changes. Please try again.",
-            })
+            console.error('[DetailStory] Save error:', error)
+            toast.error("保存失败")
         } finally {
             setIsSaving(false)
         }
@@ -275,149 +249,82 @@ const ProductDetailEditorWidget = ({ data }: DetailWidgetProps<AdminProduct>) =>
 
     return (
         <Container className="divide-y p-0">
+            <Toaster />
+
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-4">
-                <div>
-                    <Heading level="h2">Product Detail Story</Heading>
-                    <Text className="text-ui-fg-subtle" size="small">
-                        Manage rich content sections for this product's detail page
-                    </Text>
+                <div className="flex items-center gap-2">
+                    <DocumentText className="text-ui-fg-subtle" />
+                    <Heading level="h2">产品故事</Heading>
                 </div>
-                {isDirty && (
-                    <Text className="text-ui-fg-warning" size="small">
-                        Unsaved changes
-                    </Text>
-                )}
-            </div>
-
-            <div className="px-6 py-4 space-y-6">
-                {/* Section List */}
-                {sections.length > 0 ? (
-                    <div className="space-y-3">
-                        <Label weight="plus">Sections ({sections.length})</Label>
-                        <div className="space-y-2">
-                            {sections.map((section, index) => (
-                                <div
-                                    key={section.id}
-                                    className="flex items-center justify-between p-3 bg-ui-bg-subtle rounded-lg border"
-                                >
-                                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                                        <div className="text-ui-fg-muted text-sm w-6">
-                                            {index + 1}.
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <Text className="text-ui-fg-base font-medium" size="small">
-                                                {section.type === 'image_full' ? '🖼️ Image' : '📝 Text'}
-                                            </Text>
-                                            <Text className="text-ui-fg-subtle truncate" size="xsmall">
-                                                {section.type === 'image_full'
-                                                    ? section.meta?.alt || 'Image'
-                                                    : section.content.substring(0, 50) + (section.content.length > 50 ? '...' : '')
-                                                }
-                                            </Text>
-                                        </div>
-                                    </div>
-                                    <Button
-                                        variant="danger"
-                                        size="small"
-                                        onClick={() => handleDeleteSection(section.id)}
-                                    >
-                                        Delete
-                                    </Button>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                ) : (
-                    <div className="text-center py-8 text-ui-fg-subtle">
-                        <Text>No sections yet. Add text or images below.</Text>
-                    </div>
-                )}
-
-                {/* Add Buttons */}
-                <div className="space-y-4">
-                    <Label weight="plus">Add New Section</Label>
-
-                    {/* Text Input Mode */}
-                    {showTextInput ? (
-                        <div className="space-y-3">
-                            <Textarea
-                                placeholder="Enter text content..."
-                                value={newTextContent}
-                                onChange={(e) => setNewTextContent(e.target.value)}
-                                rows={4}
-                            />
-                            <div className="flex gap-2">
-                                <Button
-                                    onClick={handleAddTextSection}
-                                    disabled={!newTextContent.trim()}
-                                >
-                                    Add Text
-                                </Button>
-                                <Button
-                                    variant="secondary"
-                                    onClick={() => {
-                                        setShowTextInput(false)
-                                        setNewTextContent('')
-                                    }}
-                                >
-                                    Cancel
-                                </Button>
-                            </div>
-                        </div>
-                    ) : (
-                        <div className="flex gap-3">
-                            <Button
-                                variant="secondary"
-                                onClick={() => setShowTextInput(true)}
-                            >
-                                📝 Add Text
-                            </Button>
-                            <Button
-                                variant="secondary"
-                                onClick={() => fileInputRef.current?.click()}
-                                isLoading={isUploading}
-                                disabled={isUploading}
-                            >
-                                🖼️ Add Image
-                            </Button>
-                        </div>
-                    )}
-
-                    {/* Hidden file input */}
-                    <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="image/*"
-                        onChange={handleFileChange}
-                        className="hidden"
-                    />
-                </div>
-
-                {/* Save Button */}
-                <div className="pt-4">
+                <div className="flex gap-2">
                     <Button
-                        onClick={handleSave}
-                        isLoading={isSaving}
-                        disabled={!isDirty || isSaving}
-                        className="w-full"
+                        variant="secondary"
+                        size="small"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={isUploading}
                     >
-                        {isSaving ? "Saving..." : "Save Changes"}
+                        <Plus className="mr-1" />
+                        {isUploading ? '上传中...' : '插入图片'}
+                    </Button>
+                    <Button
+                        variant="primary"
+                        size="small"
+                        onClick={handleSave}
+                        disabled={!isDirty || isSaving}
+                    >
+                        {isSaving ? <ArrowPath className="animate-spin mr-1" /> : null}
+                        {isSaving ? '保存中...' : '保存'}
                     </Button>
                 </div>
             </div>
 
-            <Toaster />
+            <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={handleFileSelect}
+            />
+
+            {/* Editor */}
+            <div className="p-6">
+                <div
+                    ref={editorRef}
+                    contentEditable
+                    onInput={handleContentChange}
+                    onPaste={handlePaste}
+                    className="min-h-[200px] max-h-[500px] overflow-y-auto p-4 border border-ui-border-base rounded-lg focus:outline-none focus:ring-2 focus:ring-ui-fg-interactive bg-ui-bg-field prose prose-sm max-w-none"
+                    style={{
+                        lineHeight: '1.8',
+                    }}
+                    data-placeholder="在此编写产品故事...支持直接粘贴图片"
+                    suppressContentEditableWarning
+                />
+                <style>{`
+                    [contenteditable]:empty:before {
+                        content: attr(data-placeholder);
+                        color: #9ca3af;
+                        pointer-events: none;
+                    }
+                    [contenteditable] img {
+                        max-width: 100%;
+                        height: auto;
+                        border-radius: 8px;
+                        margin: 8px 0;
+                    }
+                `}</style>
+                <Text size="small" className="mt-2 text-ui-fg-subtle">
+                    提示：可直接粘贴图片，或点击"插入图片"按钮上传
+                </Text>
+            </div>
         </Container>
     )
 }
-
-// ============================================================================
-// Widget Configuration
-// ============================================================================
 
 export const config = defineWidgetConfig({
     zone: "product.details.after",
 })
 
-export default ProductDetailEditorWidget
+export default ProductDetailStoryWidget
